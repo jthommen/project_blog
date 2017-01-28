@@ -6,22 +6,22 @@
     <form method="post">
 
             <label for="username">Username:</label>
-            <div class="error"></div>
+            <div class="error">{{ error_username }}</div>
             <input type="text" id="username" name="username" value="{{ username }}">
             <br>
             <br>
             <label for="password">Password:</label>
-            <div class="error"></div>
+            <div class="error">{{ error_password }}</div>
             <input type="password" id="password" name="password" value="{{ password }}">
             <br>
             <br>
             <label for="password_verify">Repeat Password:</label>
-            <div class="error"></div>
+            <div class="error">{{ error_password_verify }}</div>
             <input type="password" id="password_verify" name="password_verify" value="{{ password_verify }}">
             <br>
             <br>
             <label for="email">Email</label>
-            <div class="error"></div>
+            <div class="error">{{error_email }}</div>
             <input type="email" id="email" name="email" value="{{ email }}">
             <br>
             <br>

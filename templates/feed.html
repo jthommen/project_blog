@@ -1,0 +1,24 @@
+{% extends "base.html" %}
+
+{% block content %}
+    <h2>Hi
+        {% if username %}
+            {{username}}
+        {% else %}
+            there
+        {% endif %}!
+    </h2>
+
+    <p>Here you can go back to the <a href="/">front page</a>.</p>
+    <p>Here you can contribute and create a <a href="/newpost">new post</a>.</p>
+
+    <hr>
+
+    {% for post in posts %}
+        <div class="post">
+            <div class="post-title">{{post.title}}</div>
+            <div clas="post-content">{{post.content}}</div>
+        </div>
+    {% endfor %}
+
+{% endblock %}
