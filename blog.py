@@ -31,12 +31,22 @@ def blog_key(name="default"):
 # Request Handlers for URL routing
 class BlogFront(HandlerHelper):
     def get(self):
-        # Retrieves items from input and handes them over to the template
-        fooditems = self.request.get_all("food")
-        self.render('front.html', fooditems = fooditems)
+        self.render('front.html')
+
+class SignUp(HandlerHelper):
+    def get(self):
+        self.render('signup.html')
+
+    def post(self):
+        have_error = False
+        username = self.request.get('username')
+        password = self.request.get('password')
+        password_verify = self.request.get('password_verify')
+        email = self.request.get('email')
 
 routes = [
-    ('/', BlogFront)
+    ('/', BlogFront),
+    ('/signup', SignUp)
 ]
 
 app = webapp2.WSGIApplication(routes=routes, debug = True)

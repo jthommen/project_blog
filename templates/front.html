@@ -1,23 +1,9 @@
-<form>
-    <h2>Add a Food </h2>
-    <input type="text" name="food">
-    {% if fooditems %}
-        {% for item in fooditems %}
-            <input type="hidden" name="food" value="{{item}}">
-        {% endfor %}
-    {% endif %}
-    <button>Add</button>
+{% extends "base.html" %}
 
-    {% if fooditems %}
-        <br>
-        <br>
-
-        <h2>Shopping List</h2>
-        <ul>
-            {% for item in fooditems %}
-                <li> {{item}}</li>
-            {% endfor %}
-        </ul>
-    {% endif %}
-
-</form>
+{% block content %}
+    <h2>Hello There!</h2>
+    <p>This is Juri's Blog, you have to sign-up to contribute!</p>
+    <p>You can do this <a href="/signup">here</a>!</p>
+    <p>Or if you already have, you can log-in <a href="/login">here</a>!</p>
+    <p>Have fun :)</p>
+{% endblock %}
