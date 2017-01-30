@@ -1,6 +1,5 @@
 import os
 import re
-
 import webapp2
 import jinja2
 
@@ -11,15 +10,12 @@ jinja_env = jinja2.Environment(loader = jinja2.FileSystemLoader(template_dir), a
 
 
 
+
+#Builds a random key that serves as ancestor
+def ancestor_key():
+    return ndb.Key('Blog', 'id')
+
 #Google Cloud Data Store Model
-
-# Setting parent key for anchestor/parent (don't know how it works exactly...)
-# def blog_key(name="default"):
-    # return db.Key.from_path('blogs', name)
-
-#
-
-
 class Post(ndb.Model):
     title = ndb.StringProperty(required = True)
     content = ndb.TextProperty(required = True)
@@ -62,8 +58,9 @@ class BlogFront(HandlerHelper):
 class Feed(HandlerHelper):
     def render_feed(self, title="", content=""):
         username = self.request.get('username')
-        posts = ndb.GqlQuery("SELECT * FROM Post ORDER BY created DESC")
-        self.render("feed.html", title=title, content=content, username=username)
+        #ndb orm query replaces gql query approach
+        posts = Post.query(ancestor=ancestor_key()).order(-Post.created)
+        self.render("feed.html", posts=posts, username=username)
 
     def get(self):
         self.render_feed()
@@ -118,8 +115,11 @@ class NewPost(HandlerHelper):
                       content = content)
 
         if title and content:
-            Post(title = title, content = content).put()
-            self.redirect('/feed')
+            post = Post(parent=ancestor_key(), title = title, content = content)
+            post.put()
+            #placeholder for permalink redirect with cloud datastore id as key
+            self.redirect('/%s'% str(post.key.id()))
+            #self.redirect('/feed')
         else:
             params['error'] = "Please fill in both, post title and content."
             self.render('newpost.html', **params)
