@@ -118,17 +118,29 @@ class NewPost(HandlerHelper):
             post = Post(parent=ancestor_key(), title = title, content = content)
             post.put()
             #placeholder for permalink redirect with cloud datastore id as key
-            self.redirect('/%s'% str(post.key.id()))
+            self.redirect('/%s' % str(post.key.id()))
             #self.redirect('/feed')
         else:
             params['error'] = "Please fill in both, post title and content."
             self.render('newpost.html', **params)
 
+class PostPage(HandlerHelper):
+    def get(self, post_id):
+        key = ndb.Key('Post', int(post_id), parent=ancestor_key())
+        post = key.get()
+
+        if not post:
+            self.error(404)
+            return
+
+        self.render('post.html', post=post)
+
 routes = [
     ('/', BlogFront),
     ('/signup', SignUp),
     ('/feed', Feed),
-    ('/newpost', NewPost)
+    ('/newpost', NewPost),
+    ('/([0-9]+)', PostPage)
 ]
 
 app = webapp2.WSGIApplication(routes=routes, debug = True)
