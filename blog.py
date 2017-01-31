@@ -13,36 +13,12 @@ from google.appengine.ext import ndb
 template_dir = os.path.join(os.path.dirname(__file__), 'templates')
 jinja_env = jinja2.Environment(loader = jinja2.FileSystemLoader(template_dir), autoescape = True)
 
-
-
 #Creating secret values for user login system
 
 #Function to generate random strings, with random & choice module
 #secret = (''.join(choice(hexdigits) for i in range(50)))
 
 secret = 'B204bd3CDBca3f35e4AB0Cb7cEe2Fd2FcA30B06267cF58d5de'
-
-#Creates a secure value by adding a pipe and the hashed value before returing it
-def make_secure_val(val):
-    return  '%s|%s' % (val, hmac.new(secret, val).hexdigest())
-
-def check_secure_val(secure_val):
-    val = secure_val.split('|')[0]
-    if secure_val == make_secure_val(val):
-        return val
-
-def make_salt(length = 5):
-    return ''.join(random.choice(letters) for x in xrange(length))
-
-def make_pw_hash(name, pw, salt=None):
-    if not salt:
-        salt = make_salt()
-    h = hashlib.sha256(name + pw + salt).hexdigest()
-    return '%s,%s' % (salt, h)
-
-def valid_pw(name, password, h):
-    salt = h.split(',')[0]
-    return h == make_pw_hash(name, password, salt)
 
 
 #Builds a random key that serves as ancestor
@@ -56,31 +32,17 @@ class Post(ndb.Model):
     created = ndb.DateTimeProperty(auto_now_add = True)
     last_modified = ndb.DateTimeProperty(auto_now = True)
 
+
 class User(ndb.Model):
     name = ndb.StringProperty(required = True)
-    pw_hash = ndb.StringProperty(required = True)
-    email = ndb.StringProperty(required = True)
+    password = ndb.StringProperty(required = True)
+    email = ndb.StringProperty()
 
     @classmethod
-    def by_id(cls, uid):
-        return User.get_by_id(uid)
-
-    @classmethod
-    def by_name(cls, username):
-        user = User.query().filter(User.name == username).fetch(limit=1)
-        return user
-
-    @classmethod
-    def register(cls, name, pw, email):
-        pw_hash = make_pw_hash(name, pw)
-        return User(name = name, pw_hash = pw_hash, email=email)
-
-    @classmethod
-    def login(cls, name, pw):
-        user = cls.by_name(name)
-        if user and valid_pw(name, pw, user.pw_hash):
-            return user
-
+    def get_by_name(cls, name):
+        user = User.query(User.name==name).fetch(1)
+        for u in user:
+            return u
 
 # Form validation functions using regular expressions
 USER_RE = re.compile(r'^[a-zA-Z0-9_-]{3,20}$')
@@ -109,26 +71,6 @@ class HandlerHelper(webapp2.RequestHandler):
     # Helper function calls write on template string instead of just returning a string
     def render(self, template, **kwargs):
         self.response.write(self.render_str(template, **kwargs))
-
-    #Functions for Cookie handling
-    def set_secure_cookie(self, name, val):
-        cookie_val = make_secure_val(val)
-        self.response.headers.add_header(
-            'Set-Cookie',
-            '%s=%s; Path=/' % (name, cookie_val))
-
-    def read_secure_cookie(self, name):
-        cookie_val = self.request.cookies.get(name)
-        return cookie_val and check_secure_val(cookie_val)
-
-    def login(self, user):
-        self.set_secure_cookie('user_id', str(user.key.id()))
-
-    def initialize(self, *args, **kwargs):
-        webapp2.RequestHandler.initialize(self, *args, **kwargs)
-        uid = self.read_secure_cookie('user_id')
-        self.user = uid and User.by_id(int(uid))
-
 
 
 # Request Handlers for URL routing
@@ -177,15 +119,21 @@ class SignUp(HandlerHelper):
             params['error_mail'] = "That's not a valid email."
             have_error = True
 
+        user = User.get_by_name(username)
+        if user:
+            if user.name == username:
+                params['error_registered'] = "That name already exists."
+                have_error = True
 
         if have_error:
             self.render('signup.html', **params)
         else:
-            user = User.register(username, password, email)
+            user = User(name=username, password=password, email=email)
             user.put()
 
-            self.login(user)
+            #self.login(user)
             self.redirect('/feed')
+
 
 class Login(HandlerHelper):
     def get(self):
