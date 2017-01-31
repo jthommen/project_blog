@@ -1,5 +1,10 @@
+import hashlib
+import hmac
 import os
+import random
 import re
+from string import letters
+
 import webapp2
 import jinja2
 
@@ -9,6 +14,35 @@ template_dir = os.path.join(os.path.dirname(__file__), 'templates')
 jinja_env = jinja2.Environment(loader = jinja2.FileSystemLoader(template_dir), autoescape = True)
 
 
+
+#Creating secret values for user login system
+
+#Function to generate random strings, with random & choice module
+#secret = (''.join(choice(hexdigits) for i in range(50)))
+
+secret = 'B204bd3CDBca3f35e4AB0Cb7cEe2Fd2FcA30B06267cF58d5de'
+
+#Creates a secure value by adding a pipe and the hashed value before returing it
+def make_secure_val(val):
+    return  '%s|%s' % (val, hmac.new(secret, val).hexdigest())
+
+def check_secure_val(secure_val):
+    val = secure_val.split('|')[0]
+    if secure_val == make_secure_val(val):
+        return val
+
+def make_salt(length = 5):
+    return ''.join(random.choice(letters) for x in xrange(length))
+
+def make_pw_hash(name, pw, salt=None):
+    if not salt:
+        salt = make_salt()
+    h = hashlib.sha256(name + pw + salt).hexdigest()
+    return '%s,%s' % (salt, h)
+
+def valid_pw(name, password, h):
+    salt = h.split(',')[0]
+    return h == make_pw_hash(name, password, salt)
 
 
 #Builds a random key that serves as ancestor
@@ -21,6 +55,31 @@ class Post(ndb.Model):
     content = ndb.TextProperty(required = True)
     created = ndb.DateTimeProperty(auto_now_add = True)
     last_modified = ndb.DateTimeProperty(auto_now = True)
+
+class User(ndb.Model):
+    name = ndb.StringProperty(required = True)
+    pw_hash = ndb.StringProperty(required = True)
+    email = ndb.StringProperty(required = True)
+
+    @classmethod
+    def by_id(cls, uid):
+        return User.get_by_id(uid)
+
+    @classmethod
+    def by_name(cls, username):
+        user = User.query().filter(User.name == username).fetch(limit=1)
+        return user
+
+    @classmethod
+    def register(cls, name, pw, email):
+        pw_hash = make_pw_hash(name, pw)
+        return User(name = name, pw_hash = pw_hash, email=email)
+
+    @classmethod
+    def login(cls, name, pw):
+        user = cls.by_name(name)
+        if user and valid_pw(name, pw, user.pw_hash):
+            return user
 
 
 # Form validation functions using regular expressions
@@ -37,6 +96,8 @@ def valid_email(email):
     return not email or EMAIL_RE.match(email)
 
 
+
+
 # Helper functions that extend webapp2 RequestHandler class to help render templates
 class HandlerHelper(webapp2.RequestHandler):
 
@@ -49,6 +110,26 @@ class HandlerHelper(webapp2.RequestHandler):
     def render(self, template, **kwargs):
         self.response.write(self.render_str(template, **kwargs))
 
+    #Functions for Cookie handling
+    def set_secure_cookie(self, name, val):
+        cookie_val = make_secure_val(val)
+        self.response.headers.add_header(
+            'Set-Cookie',
+            '%s=%s; Path=/' % (name, cookie_val))
+
+    def read_secure_cookie(self, name):
+        cookie_val = self.request.cookies.get(name)
+        return cookie_val and check_secure_val(cookie_val)
+
+    def login(self, user):
+        self.set_secure_cookie('user_id', str(user.key.id()))
+
+    def initialize(self, *args, **kwargs):
+        webapp2.RequestHandler.initialize(self, *args, **kwargs)
+        uid = self.read_secure_cookie('user_id')
+        self.user = uid and User.by_id(int(uid))
+
+
 
 # Request Handlers for URL routing
 class BlogFront(HandlerHelper):
@@ -57,10 +138,9 @@ class BlogFront(HandlerHelper):
 
 class Feed(HandlerHelper):
     def render_feed(self, title="", content=""):
-        username = self.request.get('username')
         #ndb orm query replaces gql query approach
         posts = Post.query(ancestor=ancestor_key()).order(-Post.created)
-        self.render("feed.html", posts=posts, username=username)
+        self.render("feed.html", posts=posts)
 
     def get(self):
         self.render_feed()
@@ -101,11 +181,34 @@ class SignUp(HandlerHelper):
         if have_error:
             self.render('signup.html', **params)
         else:
-            self.redirect('/feed?username=' + username)
+            user = User.register(username, password, email)
+            user.put()
+
+            self.login(user)
+            self.redirect('/feed')
+
+class Login(HandlerHelper):
+    def get(self):
+        self.render('login.html')
+
+    def post(self):
+        username = self.request.get('username')
+        password = self.request.get('password')
+
+        user = User.login(username, password)
+        if user:
+            self.login(user)
+            self.redirect('/newpost')
+        else:
+            error = 'Invalid login'
+            self.render('login.html', error= error)
 
 class NewPost(HandlerHelper):
     def get(self):
-        self.render('newpost.html')
+        if self.user:
+            self.render('newpost.html')
+        else:
+            self.redirect('/login')
 
     def post(self):
         title = self.request.get('title')
@@ -117,9 +220,8 @@ class NewPost(HandlerHelper):
         if title and content:
             post = Post(parent=ancestor_key(), title = title, content = content)
             post.put()
-            #placeholder for permalink redirect with cloud datastore id as key
+            # Redirects to permalink that is created vi post key id in Google Data Store
             self.redirect('/%s' % str(post.key.id()))
-            #self.redirect('/feed')
         else:
             params['error'] = "Please fill in both, post title and content."
             self.render('newpost.html', **params)
@@ -140,7 +242,8 @@ routes = [
     ('/signup', SignUp),
     ('/feed', Feed),
     ('/newpost', NewPost),
-    ('/([0-9]+)', PostPage)
+    ('/([0-9]+)', PostPage),
+    ('/login', Login)
 ]
 
 app = webapp2.WSGIApplication(routes=routes, debug = True)
