@@ -20,6 +20,8 @@ jinja_env = jinja2.Environment(loader = jinja2.FileSystemLoader(template_dir), a
 
 secret = 'B204bd3CDBca3f35e4AB0Cb7cEe2Fd2FcA30B06267cF58d5de'
 
+def make_secure_val(val):
+    return '%s|%s' % (val, hmac.new(secret, val).hexdigest())
 
 #Builds a random key that serves as ancestor
 def ancestor_key():
@@ -44,6 +46,12 @@ class User(ndb.Model):
         for u in user:
             return u
 
+    @classmethod
+    def login(cls, name):
+        u = cls.get_by_name(name)
+        if u:
+            return u
+
 # Form validation functions using regular expressions
 USER_RE = re.compile(r'^[a-zA-Z0-9_-]{3,20}$')
 def valid_username(username):
@@ -58,8 +66,6 @@ def valid_email(email):
     return not email or EMAIL_RE.match(email)
 
 
-
-
 # Helper functions that extend webapp2 RequestHandler class to help render templates
 class HandlerHelper(webapp2.RequestHandler):
 
@@ -71,6 +77,17 @@ class HandlerHelper(webapp2.RequestHandler):
     # Helper function calls write on template string instead of just returning a string
     def render(self, template, **kwargs):
         self.response.write(self.render_str(template, **kwargs))
+
+    # Setting and checking for secure cookies
+    def set_secure_cookie(self, name, val):
+        cookie_val = make_secure_val(val)
+        self.response.headers.add_header(
+            'Set-Cookie',
+            '%s=%s; Path=/' % (name, cookie_val))
+
+    # Login and logout helper functions
+    def login(self, user):
+        self.set_secure_cookie('user_id', str(user.key.id()))
 
 
 # Request Handlers for URL routing
@@ -130,8 +147,7 @@ class SignUp(HandlerHelper):
         else:
             user = User(name=username, password=password, email=email)
             user.put()
-
-            #self.login(user)
+            self.login(user)
             self.redirect('/feed')
 
 
