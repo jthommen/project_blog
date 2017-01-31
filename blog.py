@@ -23,6 +23,11 @@ secret = 'B204bd3CDBca3f35e4AB0Cb7cEe2Fd2FcA30B06267cF58d5de'
 def make_secure_val(val):
     return '%s|%s' % (val, hmac.new(secret, val).hexdigest())
 
+def check_secure_val(secure_val):
+    val = secure_val.split('|')[0]
+    if secure_val == make_secure_val(val):
+        return val
+
 #Builds a random key that serves as ancestor
 def ancestor_key():
     return ndb.Key('Blog', 'id')
@@ -47,9 +52,9 @@ class User(ndb.Model):
             return u
 
     @classmethod
-    def login(cls, name):
+    def login(cls, name, pw):
         u = cls.get_by_name(name)
-        if u:
+        if u and pw == u.password:
             return u
 
 # Form validation functions using regular expressions
@@ -85,9 +90,19 @@ class HandlerHelper(webapp2.RequestHandler):
             'Set-Cookie',
             '%s=%s; Path=/' % (name, cookie_val))
 
+    def read_secure_cookie(self, name):
+        cookie_val = self.request.cookies.get(name)
+        return cookie_val and check_secure_val(cookie_val)
+
     # Login and logout helper functions
     def login(self, user):
         self.set_secure_cookie('user_id', str(user.key.id()))
+
+    # checks if user is logged in
+    def initialize(self, *args, **kwargs):
+        webapp2.RequestHandler.initialize(self, *args, **kwargs)
+        user_id = self.read_secure_cookie('user_id')
+        self.user = user_id and User.get_by_id(int(user_id))
 
 
 # Request Handlers for URL routing
@@ -170,7 +185,7 @@ class Login(HandlerHelper):
 class NewPost(HandlerHelper):
     def get(self):
         if self.user:
-            self.render('newpost.html')
+            self.render('newpost.htmle')
         else:
             self.redirect('/login')
 
