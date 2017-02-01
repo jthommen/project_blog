@@ -3,14 +3,18 @@
 {% block content %}
     <h2>Hi
         {% if user %}
-            {{user.name}}!
+            {{user.name}}!</h2>
         {% else %}
-            there!
+            there!</h2>
+            <p><a href="/login">Login</a> to create a new post! Or <a href="/signup">Signup</a> here.<p>
         {% endif %}
-    </h2>
+
 
     <p>Here you can go back to the <a href="/">front page</a>.</p>
     <p>Here you can contribute and create a <a href="/newpost">new post</a>.</p>
+    {% if user %}
+        <a href="/logout">Logout</a> here.
+    {% endif %}
 
     <hr>
 
