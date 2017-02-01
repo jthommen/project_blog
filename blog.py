@@ -272,7 +272,7 @@ class EditPost(HandlerHelper):
             self.redirect('/%s' % str(post.key.id()))
         else:
             params['error'] = "Please fill in both, post title and content."
-            self.render('edit.html', **params)
+            self.render('edit.html', post=post, **params)
 
 
 
