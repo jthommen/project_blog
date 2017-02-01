@@ -144,7 +144,8 @@ class Feed(HandlerHelper):
     def render_feed(self, title="", content=""):
         #ndb orm query replaces gql query approach
         posts = Post.query(ancestor=ancestor_key()).order(-Post.created)
-        self.render("feed.html", posts=posts)
+        user = self.user
+        self.render("feed.html", posts=posts, user=user)
 
     def get(self):
         self.render_feed()

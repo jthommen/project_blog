@@ -1,7 +1,12 @@
 {% extends "base.html" %}
 
 {% block content %}
-    <h2>Hi there!
+    <h2>Hi
+        {% if user %}
+            {{user.name}}!
+        {% else %}
+            there!
+        {% endif %}
     </h2>
 
     <p>Here you can go back to the <a href="/">front page</a>.</p>
