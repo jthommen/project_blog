@@ -50,6 +50,7 @@ def ancestor_key():
 
 #Google Cloud Data Store Model
 class Post(ndb.Model):
+    author = ndb.StringProperty(required = True)
     title = ndb.StringProperty(required = True)
     content = ndb.TextProperty(required = True)
     created = ndb.DateTimeProperty(auto_now_add = True)
@@ -138,6 +139,7 @@ class BlogFront(HandlerHelper):
     def get(self):
         self.render('front.html')
 
+
 class Feed(HandlerHelper):
     def render_feed(self, title="", content=""):
         #ndb orm query replaces gql query approach
@@ -146,6 +148,7 @@ class Feed(HandlerHelper):
 
     def get(self):
         self.render_feed()
+
 
 class SignUp(HandlerHelper):
     def get(self):
@@ -215,8 +218,10 @@ class Logout(HandlerHelper):
         self.logout()
         self.redirect('/feed')
 
+
 class NewPost(HandlerHelper):
     def get(self):
+        # Checks if a user is logged in, redirects to login otherwise
         if self.user:
             self.render('newpost.html')
         else:
@@ -225,12 +230,13 @@ class NewPost(HandlerHelper):
     def post(self):
         title = self.request.get('title')
         content = self.request.get('content')
+        author = self.user.name
 
         params = dict(title = title,
                       content = content)
 
         if title and content:
-            post = Post(parent=ancestor_key(), title = title, content = content)
+            post = Post(parent=ancestor_key(), author = author, title = title, content = content)
             post.put()
             # Redirects to permalink that is created vi post key id in Google Data Store
             self.redirect('/%s' % str(post.key.id()))

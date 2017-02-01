@@ -12,7 +12,7 @@
     {% for post in posts %}
         <div class="post">
             <div class="post-title">{{post.title}}</div>
-            <div class="post-date">{{post.created.strftime("%b %d, %Y")}}</div>
+            <div class="post-date">{{post.created.strftime("%b %d, %Y")}} by  {{post.author}}</div>
             <div clas="post-content">{{post.content}}</div>
         </div>
         <hr>
