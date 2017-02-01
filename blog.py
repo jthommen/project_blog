@@ -121,6 +121,11 @@ class HandlerHelper(webapp2.RequestHandler):
     def login(self, user):
         self.set_secure_cookie('user_id', str(user.key.id()))
 
+    def logout(self):
+        self.response.headers.add_header(
+            'Set-Cookie',
+            'user_id=; Path=/')
+
     # checks if user is logged in
     def initialize(self, *args, **kwargs):
         webapp2.RequestHandler.initialize(self, *args, **kwargs)
@@ -205,6 +210,11 @@ class Login(HandlerHelper):
             error = 'Invalid login'
             self.render('login.html', error= error)
 
+class Logout(HandlerHelper):
+    def get(self):
+        self.logout()
+        self.redirect('/feed')
+
 class NewPost(HandlerHelper):
     def get(self):
         if self.user:
@@ -245,7 +255,8 @@ routes = [
     ('/feed', Feed),
     ('/newpost', NewPost),
     ('/([0-9]+)', PostPage),
-    ('/login', Login)
+    ('/login', Login),
+    ('/logout', Logout)
 ]
 
 app = webapp2.WSGIApplication(routes=routes, debug = True)
