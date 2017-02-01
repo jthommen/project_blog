@@ -1,0 +1,25 @@
+{% extends "base.html" %}
+
+{% block content %}
+
+<h2>Edit your blog post </h2>
+
+<form method="post">
+
+    <div><label for="title">Title:</label></div>
+    <input type="text" id="title" name="title" value="{{post.title}}">
+
+    <div><label for="content">Content:</label></div>
+    <textarea id="content" name="content">{{post.content}}</textarea>
+    <div class="post-date">created: {{post.created.strftime("%b %d, %Y - %H:%M")}}</div>
+    <div class="post-date">last edit: {{post.last_modified.strftime("%b %d, %Y - %H:%M")}}</div>
+    <br>
+    <div class="error">{{error}}</div>
+    <input type="submit">
+
+</form>
+
+<p>Go back to the <a href="/feed">feed</a>.</p>
+<p>Or <a href='/logout'>logout</a>.</p>
+
+{% endblock %}

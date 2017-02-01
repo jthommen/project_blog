@@ -245,6 +245,37 @@ class NewPost(HandlerHelper):
             params['error'] = "Please fill in both, post title and content."
             self.render('newpost.html', **params)
 
+class EditPost(HandlerHelper):
+    def get(self, post_id):
+        post = Post.get_by_id(int(post_id), parent=ancestor_key())
+
+        self.render('edit.html', post=post)
+
+    def post(self,post_id):
+
+        if not self.user:
+            self.redirect("/feed")
+
+        post = Post.get_by_id(int(post_id), parent=ancestor_key())
+        title = self.request.get('title')
+        content = self.request.get('content')
+
+
+        params = dict(title = title,
+                      content = content)
+
+        if title and content:
+            post.title = title
+            post.content = content
+            post.put()
+            # Redirects to permalink that is created vi post key id in Google Data Store
+            self.redirect('/%s' % str(post.key.id()))
+        else:
+            params['error'] = "Please fill in both, post title and content."
+            self.render('edit.html', **params)
+
+
+
 class PostPage(HandlerHelper):
     def get(self, post_id):
         key = ndb.Key('Post', int(post_id), parent=ancestor_key())
@@ -262,6 +293,7 @@ routes = [
     ('/feed', Feed),
     ('/newpost', NewPost),
     ('/([0-9]+)', PostPage),
+    ('/([0-9]+)/edit', EditPost),
     ('/login', Login),
     ('/logout', Logout)
 ]
