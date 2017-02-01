@@ -3,7 +3,7 @@ import hmac
 import os
 import random
 import re
-from string import letters
+import string
 
 import webapp2
 import jinja2
@@ -16,7 +16,7 @@ jinja_env = jinja2.Environment(loader = jinja2.FileSystemLoader(template_dir), a
 #Creating secret values for user login system
 
 #Function to generate random strings, with random & choice module
-#secret = (''.join(choice(hexdigits) for i in range(50)))
+#secret = (''.join(random.choice(string.hexdigits) for i in range(50)))
 
 secret = 'B204bd3CDBca3f35e4AB0Cb7cEe2Fd2FcA30B06267cF58d5de'
 
@@ -27,6 +27,22 @@ def check_secure_val(secure_val):
     val = secure_val.split('|')[0]
     if secure_val == make_secure_val(val):
         return val
+
+def make_salt():
+    return ''.join(random.choice(string.hexdigits) for i in xrange(5))
+
+def make_pw_hash(name, pw, salt=None):
+    if not salt:
+        salt = make_salt()
+    h = hashlib.sha256(name + pw + salt).hexdigest()
+    return '%s|%s' % (salt, h)
+
+def valid_pw(name, password, h):
+    salt = h.split('|')[0]
+    if h == make_pw_hash(name, password, salt):
+        return password
+
+
 
 #Builds a random key that serves as ancestor
 def ancestor_key():
@@ -42,7 +58,7 @@ class Post(ndb.Model):
 
 class User(ndb.Model):
     name = ndb.StringProperty(required = True)
-    password = ndb.StringProperty(required = True)
+    password_hash = ndb.StringProperty(required = True)
     email = ndb.StringProperty()
 
     @classmethod
@@ -54,8 +70,15 @@ class User(ndb.Model):
     @classmethod
     def login(cls, name, pw):
         u = cls.get_by_name(name)
-        if u and pw == u.password:
+        if u and pw == valid_pw(name, pw, u.password_hash):
             return u
+
+    @classmethod
+    def register(cls, username, pw, email = None):
+        password_hash = make_pw_hash(username, pw)
+        return User(name=username,
+                    password_hash=password_hash,
+                    email=email)
 
 # Form validation functions using regular expressions
 USER_RE = re.compile(r'^[a-zA-Z0-9_-]{3,20}$')
@@ -160,7 +183,7 @@ class SignUp(HandlerHelper):
         if have_error:
             self.render('signup.html', **params)
         else:
-            user = User(name=username, password=password, email=email)
+            user = User.register(username, password, email)
             user.put()
             self.login(user)
             self.redirect('/feed')
@@ -185,7 +208,7 @@ class Login(HandlerHelper):
 class NewPost(HandlerHelper):
     def get(self):
         if self.user:
-            self.render('newpost.htmle')
+            self.render('newpost.html')
         else:
             self.redirect('/login')
 
