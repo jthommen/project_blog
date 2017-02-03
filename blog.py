@@ -290,17 +290,20 @@ class PostPage(HandlerHelper):
     def get(self, post_id):
         key = ndb.Key('Post', int(post_id), parent=ancestor_key())
         post = key.get()
-        user = self.user
 
         if not post:
             self.error(404)
             return
 
-        self.render('post.html', post=post, user=user)
+        user = self.user
+        comments = Comment.query(ancestor=ancestor_key()).order(Comment.created)
+        self.render('post.html', post=post, user=user, comments=comments)
 
     def post(self,post_id):
         author = self.user.name
         content = self.request.get('comment')
+        post = Post.get_by_id(int(post_id), parent=ancestor_key())
+
 
         if content:
             comment = Comment(parent=ancestor_key(), author = author, content = content)
@@ -309,7 +312,7 @@ class PostPage(HandlerHelper):
             self.render('/%s' % str(post.key.id()))
         else:
             error = "Please make a comment before submitting it."
-            self.render('/%s' % str(post.key.id()), error=error)
+            self.redirect('/%s' % str(post.key.id()), error=error)
 
 
 routes = [

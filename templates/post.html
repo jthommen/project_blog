@@ -7,6 +7,16 @@
         <div class="post-date">{{post.created.strftime("%b %d, %Y")}} by {{post.author}}</div>
         <div clas="post-content">{{post.content}}</div>
     </div>
+    {% for comment in comments %}
+    <div class="comment">
+        <p>{{comment.author}} schrieb am {{comment.created.strftime("%b %d, %Y")}}
+            {% if user.name == comment.author %}
+                <a href="">Edit</a>
+            {% endif %}</p>
+        <div class="comment-content">{{comment.content}}</div>
+    </div>
+    {% endfor %}
+
     {% if user %}
         <form method="post">
             <div><label for="Comment">Comment:</label></div>
@@ -18,6 +28,7 @@
     {% else %}
         <p><a href="/login">Login</a> to comment! Or <a href="/signup">Signup</a> here.<p>
     {% endif %}
+
     <p>Go back to the <a href="/feed">feed</a>.</p>
 
 {% endblock %}
