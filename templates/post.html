@@ -11,7 +11,10 @@
     <div class="comment">
         <p>{{comment.author}} schrieb am {{comment.created.strftime("%b %d, %Y")}}
             {% if user.name == comment.author %}
-                <a href="">Edit</a>
+                <form action="/deletecomment" method="post">
+                    <input type="hidden" value="{{comment.key.id()}}" name="comment_id" />
+                    <input type="submit" value="Delete">
+                </form>
             {% endif %}</p>
         <div class="comment-content">{{comment.content}}</div>
     </div>

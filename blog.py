@@ -297,6 +297,10 @@ class PostPage(HandlerHelper):
             return
 
         user = self.user
+
+        # Sets Cookie for Post redirect
+        self.response.headers.add_header('Set-Cookie', 'referer=%s; Path=/' % self.request.referer)
+
         comments = Comment.query(ancestor=ancestor_key()).filter(Comment.post_id==post_id).order(Comment.created)
         self.render('post.html', post=post, user=user, comments=comments)
 
@@ -315,6 +319,24 @@ class PostPage(HandlerHelper):
             error = "Please make a comment before submitting it."
             self.redirect('/%s' % str(post.key.id()), error=error)
 
+class DeleteComment(HandlerHelper):
+    def get(self):
+        referer = str(self.request.cookies.get('referer'))
+        self.redirect(referer)
+
+    def post(self):
+        referer = str(self.request.cookies.get('referer'))
+
+        if not self.user:
+            return self.redirect(referer)
+
+        user = self.user
+        comment_id = self.request.get('comment_id')
+        comment = Comment.get_by_id(int(comment_id), parent=ancestor_key())
+
+        if comment.author == user.name:
+            comment.key.delete()
+        self.redirect(referer)
 
 routes = [
     ('/', BlogFront),
@@ -324,7 +346,8 @@ routes = [
     ('/([0-9]+)', PostPage),
     ('/([0-9]+)/edit', EditPost),
     ('/login', Login),
-    ('/logout', Logout)
+    ('/logout', Logout),
+    ('/deletecomment', DeleteComment)
 ]
 
 app = webapp2.WSGIApplication(routes=routes, debug = True)
