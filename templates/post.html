@@ -7,7 +7,17 @@
         <div class="post-date">{{post.created.strftime("%b %d, %Y")}} by {{post.author}}</div>
         <div clas="post-content">{{post.content}}</div>
     </div>
-
+    {% if user %}
+        <form method="post">
+            <div><label for="Comment">Comment:</label></div>
+            <textarea id="comment" name="comment">{{content}}</textarea>
+            <br>
+            <div class="error">{{error}}</div>
+            <input type="submit">
+        </form>
+    {% else %}
+        <p><a href="/login">Login</a> to comment! Or <a href="/signup">Signup</a> here.<p>
+    {% endif %}
     <p>Go back to the <a href="/feed">feed</a>.</p>
 
 {% endblock %}

@@ -56,6 +56,11 @@ class Post(ndb.Model):
     created = ndb.DateTimeProperty(auto_now_add = True)
     last_modified = ndb.DateTimeProperty(auto_now = True)
 
+class Comment(ndb.Model):
+    author = ndb.StringProperty(required = True)
+    content = ndb.TextProperty(required = True)
+    created = ndb.DateTimeProperty(auto_now_add = True)
+    last_modified = ndb.DateTimeProperty(auto_now = True)
 
 class User(ndb.Model):
     name = ndb.StringProperty(required = True)
@@ -200,7 +205,10 @@ class SignUp(HandlerHelper):
 
 class Login(HandlerHelper):
     def get(self):
+        # Sets Cookie for Post redirect
+        self.response.headers.add_header('Set-Cookie', 'referer=%s; Path=/' % self.request.referer)
         self.render('login.html')
+
 
     def post(self):
         username = self.request.get('username')
@@ -209,10 +217,12 @@ class Login(HandlerHelper):
         user = User.login(username, password)
         if user:
             self.login(user)
-            self.redirect('/newpost')
+            referer = str(self.request.cookies.get('referer'))
+            self.redirect(referer)
         else:
             error = 'Invalid login'
             self.render('login.html', error= error)
+
 
 class Logout(HandlerHelper):
     def get(self):
@@ -280,12 +290,27 @@ class PostPage(HandlerHelper):
     def get(self, post_id):
         key = ndb.Key('Post', int(post_id), parent=ancestor_key())
         post = key.get()
+        user = self.user
 
         if not post:
             self.error(404)
             return
 
-        self.render('post.html', post=post)
+        self.render('post.html', post=post, user=user)
+
+    def post(self,post_id):
+        author = self.user.name
+        content = self.request.get('comment')
+
+        if content:
+            comment = Comment(parent=ancestor_key(), author = author, content = content)
+            comment.put()
+            # Redirects to permalink that is created vi post key id in Google Data Store
+            self.render('/%s' % str(post.key.id()))
+        else:
+            error = "Please make a comment before submitting it."
+            self.render('/%s' % str(post.key.id()), error=error)
+
 
 routes = [
     ('/', BlogFront),
