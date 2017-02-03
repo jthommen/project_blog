@@ -15,6 +15,12 @@ indexes:
   properties:
   - name: created
 
+- kind: Comment
+  ancestor: yes
+  properties:
+  - name: post_id
+  - name: created
+
 - kind: Post
   ancestor: yes
   properties:

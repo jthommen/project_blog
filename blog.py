@@ -61,6 +61,7 @@ class Comment(ndb.Model):
     content = ndb.TextProperty(required = True)
     created = ndb.DateTimeProperty(auto_now_add = True)
     last_modified = ndb.DateTimeProperty(auto_now = True)
+    post_id = ndb.StringProperty(required = True)
 
 class User(ndb.Model):
     name = ndb.StringProperty(required = True)
@@ -296,7 +297,7 @@ class PostPage(HandlerHelper):
             return
 
         user = self.user
-        comments = Comment.query(ancestor=ancestor_key()).order(Comment.created)
+        comments = Comment.query(ancestor=ancestor_key()).filter(Comment.post_id==post_id).order(Comment.created)
         self.render('post.html', post=post, user=user, comments=comments)
 
     def post(self,post_id):
@@ -306,10 +307,10 @@ class PostPage(HandlerHelper):
 
 
         if content:
-            comment = Comment(parent=ancestor_key(), author = author, content = content)
+            comment = Comment(parent=ancestor_key(), author = author, content = content, post_id=post_id)
             comment.put()
             # Redirects to permalink that is created vi post key id in Google Data Store
-            self.render('/%s' % str(post.key.id()))
+            self.redirect('/%s' % str(post.key.id()))
         else:
             error = "Please make a comment before submitting it."
             self.redirect('/%s' % str(post.key.id()), error=error)
