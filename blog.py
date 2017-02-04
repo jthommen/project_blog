@@ -305,10 +305,11 @@ class PostPage(HandlerHelper):
 
         # Sets Cookie for Post redirect
         self.response.headers.add_header('Set-Cookie', 'referer=%s; Path=/' % self.request.referer)
+        error = self.request.cookies.get('error')
 
         comments = Comment.query(ancestor=ancestor_key()).filter(Comment.post_id==post_id).order(Comment.created)
         likes = Like.query(ancestor=ancestor_key()).filter(Like.post_id==post_id).count()
-        self.render('post.html', post=post, user=user, comments=comments, likes=likes)
+        self.render('post.html', post=post, user=user, comments=comments, likes=likes, error=error)
 
     def post(self,post_id):
         author = self.user.name
@@ -322,7 +323,8 @@ class PostPage(HandlerHelper):
             # Redirects to permalink that is created vi post key id in Google Data Store
             self.redirect('/%s' % str(post.key.id()))
         else:
-            error = "Please make a comment before submitting it."
+            error = "Please write a comment before submitting."
+            self.response.headers.add_header('Set-Cookie', 'error="%s"; Path=/' % error)
             self.redirect('/%s' % str(post.key.id()))
 
 class DeletePost(HandlerHelper):
@@ -383,6 +385,7 @@ class AddLike(HandlerHelper):
             like = Like.query(ancestor=ancestor_key()).filter(Like.post_id==post_id, Like.author_id==user_name).count()
             if like > 0:
                 error = "You can't like something twice!"
+                self.response.headers.add_header('Set-Cookie', 'error="%s"; Path=/' % error)
                 self.redirect(referer)
             else:
                 like = Like(parent=ancestor_key(), post_id=post_id, author_id = user_name, status= True)
@@ -390,7 +393,8 @@ class AddLike(HandlerHelper):
                 self.redirect(referer)
         else:
             error = "You can't like your own posts."
-            self.redirect(referer, error=error)
+            self.response.headers.add_header('Set-Cookie', 'error=%s; Path=/' % error)
+            self.redirect(referer)
 
 
 routes = [
