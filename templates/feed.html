@@ -4,6 +4,7 @@
     <h1>Hi
         {% if user %}
             {{user.name}}!</h1>
+            <p>Start contributing by creating a <a href="/newpost">new post</a>.</p>
         {% else %}
             there!</h1>
             <p><a href="/login">Login</a> or <a href="/signup">signup</a> to comment, like or create a new post!<p>
