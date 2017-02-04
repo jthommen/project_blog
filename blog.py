@@ -63,6 +63,11 @@ class Comment(ndb.Model):
     last_modified = ndb.DateTimeProperty(auto_now = True)
     post_id = ndb.StringProperty(required = True)
 
+class Like(ndb.Model):
+    post_id = ndb.StringProperty(required = True)
+    author_id = ndb.StringProperty(required = True)
+    status = ndb.BooleanProperty(required = True)
+
 class User(ndb.Model):
     name = ndb.StringProperty(required = True)
     password_hash = ndb.StringProperty(required = True)
@@ -302,7 +307,8 @@ class PostPage(HandlerHelper):
         self.response.headers.add_header('Set-Cookie', 'referer=%s; Path=/' % self.request.referer)
 
         comments = Comment.query(ancestor=ancestor_key()).filter(Comment.post_id==post_id).order(Comment.created)
-        self.render('post.html', post=post, user=user, comments=comments)
+        likes = Like.query(ancestor=ancestor_key()).filter(Like.post_id==post_id).count()
+        self.render('post.html', post=post, user=user, comments=comments, likes=likes)
 
     def post(self,post_id):
         author = self.user.name
@@ -317,7 +323,7 @@ class PostPage(HandlerHelper):
             self.redirect('/%s' % str(post.key.id()))
         else:
             error = "Please make a comment before submitting it."
-            self.redirect('/%s' % str(post.key.id()), error=error)
+            self.redirect('/%s' % str(post.key.id()))
 
 class DeletePost(HandlerHelper):
     def get(self):
@@ -357,6 +363,36 @@ class DeleteComment(HandlerHelper):
             comment.key.delete()
         self.redirect(referer)
 
+class AddLike(HandlerHelper):
+    def get(self):
+        referer = str(self.request.cookies.get('referer'))
+        self.redirect(referer)
+
+    def post(self):
+        referer = os.environ['HTTP_REFERER']
+
+        if not self.user:
+            return self.redirect(referrer)
+
+        user_name = self.user.name
+        post_id = self.request.get('post_id')
+        post = Post.get_by_id(int(post_id))
+
+
+        if user_name != post_id:
+            like = Like.query(ancestor=ancestor_key()).filter(Like.post_id==post_id, Like.author_id==user_name).count()
+            if like > 0:
+                error = "You can't like something twice!"
+                self.redirect(referer)
+            else:
+                like = Like(parent=ancestor_key(), post_id=post_id, author_id = user_name, status= True)
+                like.put()
+                self.redirect(referer)
+        else:
+            error = "You can't like your own posts."
+            self.redirect(referer, error=error)
+
+
 routes = [
     ('/', BlogFront),
     ('/signup', SignUp),
@@ -367,7 +403,8 @@ routes = [
     ('/([0-9]+)/edit', EditPost),
     ('/login', Login),
     ('/logout', Logout),
-    ('/deletecomment', DeleteComment)
+    ('/deletecomment', DeleteComment),
+    ('/addlike', AddLike)
 ]
 
 app = webapp2.WSGIApplication(routes=routes, debug = True)
