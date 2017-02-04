@@ -6,6 +6,12 @@
         <div class="post-title">{{post.title}}</div>
         <div class="post-date">{{post.created.strftime("%b %d, %Y")}} by {{post.author}}</div>
         <div clas="post-content">{{post.content}}</div>
+        {% if user.name == post.author %}
+            <form action="/deletepost" method="post">
+                <input type="hidden" value="{{post.key.id()}}" name="post_id" />
+                <input type="submit" value = "Delete">
+            </form>
+        {% endif %}
     </div>
     {% for comment in comments %}
     <div class="comment">

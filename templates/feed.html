@@ -26,6 +26,12 @@
                 {% if user.name == post.author %}
                     <a href="/{{post.key.id()}}/edit">Edit</a>
                 {% endif %}
+                {% if user.name == post.author %}
+                   <form action="/deletepost" method="post">
+                        <input type="hidden" value="{{post.key.id()}}" name="post_id" />
+                        <input type="submit" value = "Delete">
+                    </form>
+                {% endif %}
             </div>
             <div clas="post-content">{{post.content}}</div>
         </div>

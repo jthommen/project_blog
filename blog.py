@@ -319,6 +319,25 @@ class PostPage(HandlerHelper):
             error = "Please make a comment before submitting it."
             self.redirect('/%s' % str(post.key.id()), error=error)
 
+class DeletePost(HandlerHelper):
+    def get(self):
+        referer = str(self.request.cookies.get('referer'))
+        self.redirect(referer)
+
+    def post(self):
+        referer = str(self.request.cookies.get('referer'))
+
+        if not self.user:
+            return self.redirect(referer)
+
+        user = self.user
+        post_id = self.request.get('post_id')
+        post = Post.get_by_id(int(post_id), parent=ancestor_key())
+
+        if post.author == user.name:
+            post.key.delete()
+        self.redirect('/feed')
+
 class DeleteComment(HandlerHelper):
     def get(self):
         referer = str(self.request.cookies.get('referer'))
@@ -343,6 +362,7 @@ routes = [
     ('/signup', SignUp),
     ('/feed', Feed),
     ('/newpost', NewPost),
+    ('/deletepost', DeletePost),
     ('/([0-9]+)', PostPage),
     ('/([0-9]+)/edit', EditPost),
     ('/login', Login),
