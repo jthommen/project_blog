@@ -35,6 +35,11 @@
                     <li><a href="/login">Login</a></li>
                 {% endif %}
               </ul>
+            {% if user %}
+                <ul class="nav navbar-nav navbar-right">
+                    <li class="user-name">{{user.name}}</li>
+                </ul>
+            {% endif %}
             </div><!--/.nav-collapse -->
           </div>
         </nav>
