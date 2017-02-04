@@ -1,35 +1,31 @@
 {% extends "base.html" %}
 
 {% block content %}
-    <h2>Hi
+    <h1>Hi
         {% if user %}
-            {{user.name}}!</h2>
+            {{user.name}}!</h1>
         {% else %}
-            there!</h2>
-            <p><a href="/login">Login</a> to create a new post! Or <a href="/signup">Signup</a> here.<p>
+            there!</h1>
+            <p><a href="/login">Login</a> or <a href="/signup">signup</a> to comment, like or create a new post!<p>
         {% endif %}
-
-
-    <p>Here you can go back to the <a href="/">front page</a>.</p>
-    <p>Here you can contribute and create a <a href="/newpost">new post</a>.</p>
-    {% if user %}
-        <a href="/logout">Logout</a> here.
-    {% endif %}
 
     <hr>
 
     {% for post in posts %}
         <div class="post">
-            <div class="post-title"><a href="/{{post.key.id()}}">{{post.title}}</a></div>
+            {% if user %}
+                <div class="post-title"><h2><a href="/{{post.key.id()}}">{{post.title}}</a></h2></div>
+            {% else %}
+                <div class="post-title"><h2>{{post.title}}</h2></div>
+            {% endif %}
             <div class="post-date">
                 {{post.created.strftime("%b %d, %Y at %H:%M")}} by  {{post.author}}
                 {% if user.name == post.author %}
-                    <a href="/{{post.key.id()}}/edit">Edit</a>
-                {% endif %}
-                {% if user.name == post.author %}
+                    <br>
+                    <button class="btn btn-default float-left"><a href="/{{post.key.id()}}/edit">Edit</a></button>
                    <form action="/deletepost" method="post">
                         <input type="hidden" value="{{post.key.id()}}" name="post_id" />
-                        <input type="submit" value = "Delete">
+                        <input type="submit" class="btn btn-default" value = "Delete">
                     </form>
                 {% endif %}
             </div>

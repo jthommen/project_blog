@@ -301,7 +301,10 @@ class PostPage(HandlerHelper):
             self.error(404)
             return
 
-        user = self.user
+        if self.user:
+            user = self.user
+            if user.name == post.author:
+                self.response.headers.add_header('Set-Cookie', 'error=; Path=/')
 
         # Sets Cookie for Post redirect
         self.response.headers.add_header('Set-Cookie', 'referer=%s; Path=/' % self.request.referer)
