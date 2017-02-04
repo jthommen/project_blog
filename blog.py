@@ -267,6 +267,7 @@ class EditPost(HandlerHelper):
 
         self.render('edit.html', post=post)
 
+
     def post(self,post_id):
 
         if not self.user:
@@ -310,6 +311,7 @@ class PostPage(HandlerHelper):
         self.response.headers.add_header('Set-Cookie', 'referer=%s; Path=/' % self.request.referer)
         error = self.request.cookies.get('error')
 
+        #Queries for post page content
         comments = Comment.query(ancestor=ancestor_key()).filter(Comment.post_id==post_id).order(Comment.created)
         likes = Like.query(ancestor=ancestor_key()).filter(Like.post_id==post_id).count()
         self.render('post.html', post=post, user=user, comments=comments, likes=likes, error=error)
@@ -319,7 +321,7 @@ class PostPage(HandlerHelper):
         content = self.request.get('comment')
         post = Post.get_by_id(int(post_id), parent=ancestor_key())
 
-
+        # Create comments
         if content:
             comment = Comment(parent=ancestor_key(), author = author, content = content, post_id=post_id)
             comment.put()
@@ -383,7 +385,7 @@ class AddLike(HandlerHelper):
         post_id = self.request.get('post_id')
         post = Post.get_by_id(int(post_id))
 
-
+        #Adding likes
         if user_name != post_id:
             like = Like.query(ancestor=ancestor_key()).filter(Like.post_id==post_id, Like.author_id==user_name).count()
             if like > 0:
