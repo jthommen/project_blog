@@ -240,7 +240,7 @@ class NewPost(HandlerHelper):
     def get(self):
         # Checks if a user is logged in, redirects to login otherwise
         if self.user:
-            self.render('newpost.html')
+            self.render('newpost.html', user=self.user)
         else:
             self.redirect('/login')
 

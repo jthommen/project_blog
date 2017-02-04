@@ -5,7 +5,8 @@
     <div class="post">
         <h2>Blog Post</h2>
         <div class="post-title">{{post.title}}</div>
-        <div class="post-date">{{post.created.strftime("%b %d, %Y")}} by {{post.author}}</div>
+        <div class="post-date">{{post.created.strftime("%b %d, %Y at %H:%M")}} by {{post.author}}</div>
+        <div class="post-date">Last edit: {{post.last_modified.strftime("%b %d, %Y at %H:%M")}}</div>
         <br>
         <div clas="post-content">{{post.content}}</div>
         {% if user.name == post.author %}

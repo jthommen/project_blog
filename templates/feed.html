@@ -22,7 +22,7 @@
         <div class="post">
             <div class="post-title"><a href="/{{post.key.id()}}">{{post.title}}</a></div>
             <div class="post-date">
-                {{post.created.strftime("%b %d, %Y")}} by  {{post.author}}
+                {{post.created.strftime("%b %d, %Y at %H:%M")}} by  {{post.author}}
                 {% if user.name == post.author %}
                     <a href="/{{post.key.id()}}/edit">Edit</a>
                 {% endif %}
