@@ -301,7 +301,7 @@ class EditPost(HandlerHelper):
     def post(self, post_id):
 
         if not self.user:
-            self.redirect("/login")
+            self.redirect('/login')
 
         post = Post.get_by_id(int(post_id), parent=ancestor_key())
         if not post:
@@ -428,7 +428,7 @@ class DeleteComment(HandlerHelper):
         referer = str(self.request.cookies.get('referer'))
 
         if not self.user:
-            return self.redirect(referer)
+            return self.redirect('/login')
 
         user = self.user
         comment_id = self.request.get('comment_id')
