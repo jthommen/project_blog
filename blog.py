@@ -168,6 +168,7 @@ class BlogFront(HandlerHelper):
         self.render('front.html')
 
 
+# Handler for the main post feed
 class Feed(HandlerHelper):
     def render_feed(self, title="", content=""):
         # ndb orm query replaces gql query approach
@@ -179,6 +180,7 @@ class Feed(HandlerHelper):
         self.render_feed()
 
 
+# Handler for signup form including error handling
 class SignUp(HandlerHelper):
     def get(self):
         self.render('signup.html')
@@ -227,6 +229,7 @@ class SignUp(HandlerHelper):
             self.redirect('/feed')
 
 
+# Handler for login page
 class Login(HandlerHelper):
     def get(self):
         # Sets Cookie for Post redirect
@@ -249,12 +252,14 @@ class Login(HandlerHelper):
             self.render('login.html', error=error)
 
 
+# Handler for logout page
 class Logout(HandlerHelper):
     def get(self):
         self.logout()
         self.redirect('/feed')
 
 
+# Handler for page to create new post
 class NewPost(HandlerHelper):
     def get(self):
         # Checks if a user is logged in, redirects to login otherwise
@@ -286,6 +291,7 @@ class NewPost(HandlerHelper):
             self.render('newpost.html', **params)
 
 
+# Handler for page to edit posts
 class EditPost(HandlerHelper):
     def get(self, post_id):
         post = Post.get_by_id(int(post_id), parent=ancestor_key())
@@ -389,6 +395,7 @@ class PostPage(HandlerHelper):
             return
 
 
+# Handler to delete a post
 class DeletePost(HandlerHelper):
     def get(self):
         referer = str(self.request.cookies.get('referer'))
@@ -411,6 +418,7 @@ class DeletePost(HandlerHelper):
             self.redirect('/feed')
 
 
+# Handler to delete a comment
 class DeleteComment(HandlerHelper):
     def get(self):
         referer = str(self.request.cookies.get('referer'))
@@ -435,6 +443,7 @@ class DeleteComment(HandlerHelper):
             self.redirect(referer)
 
 
+# Handler to add a like
 class AddLike(HandlerHelper):
     def get(self):
         referer = str(self.request.cookies.get('referer'))
