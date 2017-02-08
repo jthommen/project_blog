@@ -251,9 +251,9 @@ class Login(HandlerHelper):
             self.login(user)
             referer = str(self.request.cookies.get('referer'))
             if referer == None:
-                self.redirect(referer)
-            else:
                 self.redirect('/feed')
+            else:
+                self.redirect(referer)
         else:
             error = 'Invalid login'
             self.render('login.html', error=error)
@@ -373,6 +373,7 @@ class PostPage(HandlerHelper):
         self.response.headers.add_header(
             'Set-Cookie',
             'referer=%s; Path=/' % self.request.referer)
+
         params['error'] = self.request.cookies.get('error')
 
         # Queries for post page content
@@ -381,12 +382,6 @@ class PostPage(HandlerHelper):
         params['likes'] = Like.query(ancestor=ancestor_key()).filter(
             Like.post_id == post_id).count()
         self.render('post.html', **params)
-
-        # post=post,
-        # user=user,
-        # comments=comments,
-        # likes=likes,
-        # error=error)
 
     # Function to create comments
     def post(self, post_id):
@@ -445,6 +440,45 @@ class DeletePost(HandlerHelper):
                 if post.author == user.name:
                     post.key.delete()
                 self.redirect('/feed')
+
+
+# Handler to edit a comment
+class EditComment(HandlerHelper):
+
+    def get(self, comment_id):
+        comment = Comment.get_by_id(int(comment_id), parent=ancestor_key())
+
+        self.render('editcomment.html', comment=comment)
+
+    def post(self, comment_id):
+
+        if not self.user:
+            return self.redirect('/login')
+
+        else:
+            comment = Comment.get_by_id(int(comment_id), parent=ancestor_key())
+            user = self.user
+
+            if not comment:
+                self.error(404)
+            else:
+                content = self.request.get('content')
+
+            params = dict(content=content)
+
+            if user.name == comment.author:
+                if content:
+                    comment.content = content
+                    comment.put()
+                    # Redirects to permalink that is created
+                    # via post key id in Google Data Store
+                    self.redirect('/%s' % str(comment.post_id))
+                else:
+                    params['error'] = "Please write some text."
+                    self.render('editcomment.html', comment=comment, **params)
+            else:
+                params['error'] = "You can only edit your own posts."
+                self.render('editcomment.html', comment=comment, **params)
 
 
 # Handler to delete a comment
@@ -529,6 +563,7 @@ routes = [
     ('/([0-9]+)/edit', EditPost),
     ('/login', Login),
     ('/logout', Logout),
+    ('/editcomment/([0-9]+)', EditComment),
     ('/deletecomment', DeleteComment),
     ('/addlike', AddLike)
 ]

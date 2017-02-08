@@ -41,14 +41,16 @@
     {% for comment in comments %}
     <div class="comment">
         <p>{{comment.author}} wrote on {{comment.created.strftime("%b %d, %Y at %H:%M")}}
-            {% if user.name == comment.author %}
-                <div class="comment-content">{{comment.content}}</div>
-                <form action="/deletecomment" method="post">
-                    <input type="hidden" value="{{comment.key.id()}}" name="comment_id" />
-                    <input type="submit" class="btn btn-default" value="Delete">
-                </form>
-            {% endif %}</p>
+        <div class="comment-content">{{comment.content}}</div>
+        {% if user.name == comment.author %}
+            <button type="button" class="btn btn-default float-left"><a href="/editcomment/{{comment.key.id()}}">Edit</a></button>
+            <form action="/deletecomment" method="post">
+                <input type="hidden" value="{{comment.key.id()}}" name="comment_id" />
+                <input type="submit" class="btn btn-default" value="Delete">
+            </form>
+        {% endif %}</p>
     </div>
+    </br>
     {% endfor %}
     <br>
     {% if user %}

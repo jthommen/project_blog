@@ -14,11 +14,7 @@
 
     {% for post in posts %}
         <div class="post">
-            {% if user %}
-                <div class="post-title"><h2><a href="/{{post.key.id()}}">{{post.title}}</a></h2></div>
-            {% else %}
-                <div class="post-title"><h2>{{post.title}}</h2></div>
-            {% endif %}
+            <div class="post-title"><h2><a href="/{{post.key.id()}}">{{post.title}}</a></h2></div>
             <div class="post-date">
                 {{post.created.strftime("%b %d, %Y at %H:%M")}} by  {{post.author}}
                 {% if user.name == post.author %}

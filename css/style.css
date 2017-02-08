@@ -13,6 +13,7 @@ form input[type="password"] {
 form input[type="submit"]{
     display: inline;
     margin-top: 5px;
+    margin-right: 5px;
 }
 
 form input[type="text"] {
