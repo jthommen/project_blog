@@ -240,7 +240,7 @@ class Login(HandlerHelper):
         self.response.headers.add_header(
             'Set-Cookie',
             'referer=%s; Path=/' % self.request.referer)
-        self.render('login.html')
+        self.render('login.html', referer=self.request.referer)
 
     def post(self):
         username = self.request.get('username')
@@ -312,7 +312,9 @@ class EditPost(HandlerHelper):
     def get(self, post_id):
         post = Post.get_by_id(int(post_id), parent=ancestor_key())
 
-        self.render('edit.html', post=post)
+        self.render('edit.html',
+            post=post,
+            referer=self.request.referer)
 
     def post(self, post_id):
 
@@ -329,7 +331,8 @@ class EditPost(HandlerHelper):
                 content = self.request.get('content')
 
             params = dict(title=title,
-                          content=content)
+                          content=content,
+                          request=self.request.referer)
 
             if user.name == post.author:
                 if title and content:
@@ -360,6 +363,10 @@ class PostPage(HandlerHelper):
             return
         else:
             params = dict(post=post)
+            params['comments'] = Comment.query(ancestor=ancestor_key()).filter(
+                Comment.post_id == post_id).order(Comment.created)
+            params['likes'] = Like.query(ancestor=ancestor_key()).filter(
+                Like.post_id == post_id).count()
 
             # Sets Cookie for Post redirect
             self.response.headers.add_header(
@@ -369,10 +376,6 @@ class PostPage(HandlerHelper):
             if self.user:
                 user = self.user
                 params['user'] = user
-                params['comments'] = Comment.query(ancestor=ancestor_key()).filter(
-                    Comment.post_id == post_id).order(Comment.created)
-                params['likes'] = Like.query(ancestor=ancestor_key()).filter(
-                    Like.post_id == post_id).count()
 
                 if user.name == post.author:
                     self.response.headers.add_header(
@@ -383,6 +386,8 @@ class PostPage(HandlerHelper):
                 else:
                     params['error'] = self.request.cookies.get('error')
                     self.render('post.html', **params)
+            else:
+                self.render('post.html', **params)
 
     # Function to create comments
     def post(self, post_id):
@@ -449,7 +454,9 @@ class EditComment(HandlerHelper):
     def get(self, comment_id):
         comment = Comment.get_by_id(int(comment_id), parent=ancestor_key())
 
-        self.render('editcomment.html', comment=comment)
+        self.render('editcomment.html',
+            comment=comment,
+            referer=self.request.referer)
 
     def post(self, comment_id):
 
@@ -466,6 +473,7 @@ class EditComment(HandlerHelper):
                 content = self.request.get('content')
 
             params = dict(content=content)
+            params['referer'] = self.request.referer
 
             if user.name == comment.author:
                 if content:
