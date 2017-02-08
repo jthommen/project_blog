@@ -8,12 +8,14 @@
         <div class="post-date">Last edited {{post.last_modified.strftime("%b %d, %Y at %H:%M")}}</div>
         <br>
         <div clas="post-content">{{post.content}}</div>
-        {% if user.name == post.author %}
-            <button type="button" class="btn btn-default float-left"><a href="/{{post.key.id()}}/edit">Edit</a></button>
-            <form action="/deletepost" method="post">
-                <input type="hidden" value="{{post.key.id()}}" name="post_id" />
-                <input type="submit" class="btn btn-default" value = "Delete">
-            </form>
+        {% if user %}
+            {% if user.name == post.author %}
+                <button type="button" class="btn btn-default float-left"><a href="/{{post.key.id()}}/edit">Edit</a></button>
+                <form action="/deletepost" method="post">
+                    <input type="hidden" value="{{post.key.id()}}" name="post_id" />
+                    <input type="submit" class="btn btn-default" value = "Delete">
+                </form>
+            {% endif %}
         {% endif %}
     </div>
 
@@ -26,11 +28,13 @@
             {{likes}} Persons like this post
         {% endif %}
     </div>
-    {% if user.name != post.author %}
-        <form action="/addlike" method="post">
-            <input type="hidden" value="{{post.key.id()}}" name="post_id">
-            <input type="submit" class="btn btn-default" value="Like">
-        </form>
+    {% if user %}
+        {% if user.name != post.author %}
+            <form action="/addlike" method="post">
+                <input type="hidden" value="{{post.key.id()}}" name="post_id">
+                <input type="submit" class="btn btn-default" value="Like">
+            </form>
+        {% endif %}
     {% endif %}
     <hr>
     <h2>Comments</h2>

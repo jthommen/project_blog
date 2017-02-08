@@ -164,12 +164,14 @@ class HandlerHelper(webapp2.RequestHandler):
 
 # Request Handlers for URL routing
 class BlogFront(HandlerHelper):
+
     def get(self):
         self.render('front.html')
 
 
 # Handler for the main post feed
 class Feed(HandlerHelper):
+
     def render_feed(self, title="", content=""):
         # ndb orm query replaces gql query approach
         posts = Post.query(ancestor=ancestor_key()).order(-Post.created)
@@ -182,6 +184,7 @@ class Feed(HandlerHelper):
 
 # Handler for signup form including error handling
 class SignUp(HandlerHelper):
+
     def get(self):
         self.render('signup.html')
 
@@ -231,6 +234,7 @@ class SignUp(HandlerHelper):
 
 # Handler for login page
 class Login(HandlerHelper):
+
     def get(self):
         # Sets Cookie for Post redirect
         self.response.headers.add_header(
@@ -246,7 +250,10 @@ class Login(HandlerHelper):
         if user:
             self.login(user)
             referer = str(self.request.cookies.get('referer'))
-            self.redirect(referer)
+            if referer == None:
+                self.redirect(referer)
+            else:
+                self.redirect('/feed')
         else:
             error = 'Invalid login'
             self.render('login.html', error=error)
@@ -254,6 +261,7 @@ class Login(HandlerHelper):
 
 # Handler for logout page
 class Logout(HandlerHelper):
+
     def get(self):
         self.logout()
         self.redirect('/feed')
@@ -261,38 +269,46 @@ class Logout(HandlerHelper):
 
 # Handler for page to create new post
 class NewPost(HandlerHelper):
+
     def get(self):
         # Checks if a user is logged in, redirects to login otherwise
         if self.user:
             self.render('newpost.html', user=self.user)
         else:
-            self.redirect('/login')
+            return self.redirect('/login')
 
     def post(self):
-        title = self.request.get('title')
-        content = self.request.get('content')
-        author = self.user.name
 
-        params = dict(title=title,
-                      content=content)
+        if not self.user:
+            return self.redirect('/login')
 
-        if title and content:
-            post = Post(
-                parent=ancestor_key(),
-                author=author,
-                title=title,
-                content=content)
-            post.put()
-            # Redirects to permalink that is created
-            # via post key id in Google Data Store
-            self.redirect('/%s' % str(post.key.id()))
         else:
-            params['error'] = "Please fill in both, post title and content."
-            self.render('newpost.html', **params)
+            title = self.request.get('title')
+            content = self.request.get('content')
+            author = self.user.name
+
+            params = dict(title=title,
+                          content=content)
+
+            if title and content:
+                post = Post(
+                    parent=ancestor_key(),
+                    author=author,
+                    title=title,
+                    content=content)
+                post.put()
+                # Redirects to permalink that is created
+                # via post key id in Google Data Store
+                self.redirect('/%s' % str(post.key.id()))
+            else:
+                params[
+                    'error'] = "Please fill in both, post title and content."
+                self.render('newpost.html', **params)
 
 
 # Handler for page to edit posts
 class EditPost(HandlerHelper):
+
     def get(self, post_id):
         post = Post.get_by_id(int(post_id), parent=ancestor_key())
 
@@ -301,37 +317,40 @@ class EditPost(HandlerHelper):
     def post(self, post_id):
 
         if not self.user:
-            self.redirect('/login')
+            return self.redirect('/login')
 
-        post = Post.get_by_id(int(post_id), parent=ancestor_key())
-        if not post:
-            self.error(404)
         else:
-            title = self.request.get('title')
-            content = self.request.get('content')
-
-        params = dict(title=title,
-                      content=content)
-
-        if user.name == post.author:
-            if title and content:
-                post.title = title
-                post.content = content
-                post.put()
-                # Redirects to permalink that is created
-                # via post key id in Google Data Store
-                self.redirect('/%s' % str(post.key.id()))
+            post = Post.get_by_id(int(post_id), parent=ancestor_key())
+            user = self.user
+            if not post:
+                self.error(404)
             else:
-                params['error'] = """Please fill in both,
-                    post title and content."""
+                title = self.request.get('title')
+                content = self.request.get('content')
+
+            params = dict(title=title,
+                          content=content)
+
+            if user.name == post.author:
+                if title and content:
+                    post.title = title
+                    post.content = content
+                    post.put()
+                    # Redirects to permalink that is created
+                    # via post key id in Google Data Store
+                    self.redirect('/%s' % str(post.key.id()))
+                else:
+                    params['error'] = """Please fill in both,
+                        post title and content."""
+                    self.render('edit.html', post=post, **params)
+            else:
+                params['error'] = "You can only edit your own posts."
                 self.render('edit.html', post=post, **params)
-        else:
-            params['error'] = "You can only edit your own posts."
-            self.render('edit.html', post=post, **params)
 
 
 # Handler for displaying a single post page
 class PostPage(HandlerHelper):
+
     def get(self, post_id):
         key = ndb.Key('Post', int(post_id), parent=ancestor_key())
         post = key.get()
@@ -339,9 +358,12 @@ class PostPage(HandlerHelper):
         if not post:
             self.error(404)
             return
+        else:
+            params = dict(post=post)
 
         if self.user:
             user = self.user
+            params['user'] = user
             if user.name == post.author:
                 self.response.headers.add_header(
                     'Set-Cookie',
@@ -351,52 +373,58 @@ class PostPage(HandlerHelper):
         self.response.headers.add_header(
             'Set-Cookie',
             'referer=%s; Path=/' % self.request.referer)
-        error = self.request.cookies.get('error')
+        params['error'] = self.request.cookies.get('error')
 
         # Queries for post page content
-        comments = Comment.query(ancestor=ancestor_key()).filter(
+        params['comments'] = Comment.query(ancestor=ancestor_key()).filter(
             Comment.post_id == post_id).order(Comment.created)
-        likes = Like.query(ancestor=ancestor_key()).filter(
+        params['likes'] = Like.query(ancestor=ancestor_key()).filter(
             Like.post_id == post_id).count()
-        self.render(
-            'post.html',
-            post=post,
-            user=user,
-            comments=comments,
-            likes=likes,
-            error=error)
+        self.render('post.html', **params)
+
+        # post=post,
+        # user=user,
+        # comments=comments,
+        # likes=likes,
+        # error=error)
 
     # Function to create comments
     def post(self, post_id):
-        author = self.user.name
-        content = self.request.get('comment')
-        post = Post.get_by_id(int(post_id), parent=ancestor_key())
 
-        # Create comments
-        if post:
-            if content:
-                comment = Comment(
-                    parent=ancestor_key(),
-                    author=author,
-                    content=content,
-                    post_id=post_id)
-                comment.put()
-                # Redirects to permalink that is created
-                # via post key id in Google Data Store
-                self.redirect('/%s' % str(post.key.id()))
-            else:
-                error = "Please write a comment before submitting."
-                self.response.headers.add_header(
-                    'Set-Cookie',
-                    'error="%s"; Path=/' % error)
-                self.redirect('/%s' % str(post.key.id()))
+        if not self.user:
+            return self.redirect('/login')
+
         else:
-            self.error(404)
-            return
+            author = self.user.name
+            content = self.request.get('comment')
+            post = Post.get_by_id(int(post_id), parent=ancestor_key())
+
+            # Create comments
+            if post:
+                if content:
+                    comment = Comment(
+                        parent=ancestor_key(),
+                        author=author,
+                        content=content,
+                        post_id=post_id)
+                    comment.put()
+                    # Redirects to permalink that is created
+                    # via post key id in Google Data Store
+                    self.redirect('/%s' % str(post.key.id()))
+                else:
+                    error = "Please write a comment before submitting."
+                    self.response.headers.add_header(
+                        'Set-Cookie',
+                        'error="%s"; Path=/' % error)
+                    self.redirect('/%s' % str(post.key.id()))
+            else:
+                self.error(404)
+                return
 
 
 # Handler to delete a post
 class DeletePost(HandlerHelper):
+
     def get(self):
         referer = str(self.request.cookies.get('referer'))
         self.redirect(referer)
@@ -405,21 +433,23 @@ class DeletePost(HandlerHelper):
         if not self.user:
             return self.redirect('/login')
 
-        user = self.user
-        post_id = self.request.get('post_id')
-        post = Post.get_by_id(int(post_id), parent=ancestor_key())
-
-        if not post:
-            self.error(404)
-            return
         else:
-            if post.author == user.name:
-                post.key.delete()
-            self.redirect('/feed')
+            user = self.user
+            post_id = self.request.get('post_id')
+            post = Post.get_by_id(int(post_id), parent=ancestor_key())
+
+            if not post:
+                self.error(404)
+                return
+            else:
+                if post.author == user.name:
+                    post.key.delete()
+                self.redirect('/feed')
 
 
 # Handler to delete a comment
 class DeleteComment(HandlerHelper):
+
     def get(self):
         referer = str(self.request.cookies.get('referer'))
         self.redirect(referer)
@@ -430,21 +460,23 @@ class DeleteComment(HandlerHelper):
         if not self.user:
             return self.redirect('/login')
 
-        user = self.user
-        comment_id = self.request.get('comment_id')
-        comment = Comment.get_by_id(int(comment_id), parent=ancestor_key())
-
-        if not comment:
-            self.error(404)
-            return
         else:
-            if comment.author == user.name:
-                comment.key.delete()
-            self.redirect(referer)
+            user = self.user
+            comment_id = self.request.get('comment_id')
+            comment = Comment.get_by_id(int(comment_id), parent=ancestor_key())
+
+            if not comment:
+                self.error(404)
+                return
+            else:
+                if comment.author == user.name:
+                    comment.key.delete()
+                self.redirect(referer)
 
 
 # Handler to add a like
 class AddLike(HandlerHelper):
+
     def get(self):
         referer = str(self.request.cookies.get('referer'))
         self.redirect(referer)
@@ -455,35 +487,36 @@ class AddLike(HandlerHelper):
         if not self.user:
             return self.redirect('/login')
 
-        user_name = self.user.name
-        post_id = self.request.get('post_id')
-        post = Post.get_by_id(int(post_id), parent=ancestor_key())
+        else:
+            user_name = self.user.name
+            post_id = self.request.get('post_id')
+            post = Post.get_by_id(int(post_id), parent=ancestor_key())
 
-        # Adding likes
-        if user_name != post.author:
-            like = Like.query(ancestor=ancestor_key()).filter(
-                Like.post_id == post_id,
-                Like.author_id == user_name).count()
-            if like > 0:
-                error = "You can't like something twice!"
+            # Adding likes
+            if user_name != post.author:
+                like = Like.query(ancestor=ancestor_key()).filter(
+                    Like.post_id == post_id,
+                    Like.author_id == user_name).count()
+                if like > 0:
+                    error = "You can't like something twice!"
+                    self.response.headers.add_header(
+                        'Set-Cookie',
+                        'error="%s"; Path=/' % error)
+                    self.redirect(referer)
+                else:
+                    like = Like(
+                        parent=ancestor_key(),
+                        post_id=post_id,
+                        author_id=user_name,
+                        status=True)
+                    like.put()
+                    self.redirect(referer)
+            else:
+                error = "You can't like your own posts."
                 self.response.headers.add_header(
                     'Set-Cookie',
-                    'error="%s"; Path=/' % error)
+                    'error=%s; Path=/' % error)
                 self.redirect(referer)
-            else:
-                like = Like(
-                    parent=ancestor_key(),
-                    post_id=post_id,
-                    author_id=user_name,
-                    status=True)
-                like.put()
-                self.redirect(referer)
-        else:
-            error = "You can't like your own posts."
-            self.response.headers.add_header(
-                'Set-Cookie',
-                'error=%s; Path=/' % error)
-            self.redirect(referer)
 
 
 routes = [
