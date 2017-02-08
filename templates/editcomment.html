@@ -1,0 +1,33 @@
+{% extends "base.html" %}
+
+{% block content %}
+
+<h2>Edit your comment </h2>
+
+<form method="post">
+
+    <div><label for="content">Comment:</label></div>
+    <textarea id="content" name="content">{{comment.content}}</textarea>
+    <table>
+        <tr>
+            <td>Created:</td>
+            <td>{{comment.created.strftime("%b %d, %Y - %H:%M")}}</td>
+        </tr>
+        <tr>
+            <td>Last edit:</td>
+            <td>{{comment.last_modified.strftime("%b %d, %Y - %H:%M")}}</td>
+        </tr>
+    </table>
+    <br>
+    {% if error %}
+        <div class="error alert alert-danger">{{error}}</div>
+    {% endif %}
+    <input type="submit" class="btn btn-default">
+
+</form>
+
+<p>Go back to the <a href="/feed">feed</a>.</p>
+<p>Go <a href="{{referer}}">back</a>.</p>
+<p>Or <a href='/logout'>logout</a>.</p>
+
+{% endblock %}
