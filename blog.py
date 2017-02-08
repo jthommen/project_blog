@@ -361,27 +361,28 @@ class PostPage(HandlerHelper):
         else:
             params = dict(post=post)
 
-        if self.user:
-            user = self.user
-            params['user'] = user
-            if user.name == post.author:
-                self.response.headers.add_header(
-                    'Set-Cookie',
-                    'error=; Path=/')
+            # Sets Cookie for Post redirect
+            self.response.headers.add_header(
+                'Set-Cookie',
+                'referer=%s; Path=/' % self.request.referer)
 
-        # Sets Cookie for Post redirect
-        self.response.headers.add_header(
-            'Set-Cookie',
-            'referer=%s; Path=/' % self.request.referer)
+            if self.user:
+                user = self.user
+                params['user'] = user
+                params['comments'] = Comment.query(ancestor=ancestor_key()).filter(
+                    Comment.post_id == post_id).order(Comment.created)
+                params['likes'] = Like.query(ancestor=ancestor_key()).filter(
+                    Like.post_id == post_id).count()
 
-        params['error'] = self.request.cookies.get('error')
+                if user.name == post.author:
+                    self.response.headers.add_header(
+                        'Set-Cookie',
+                        'error=; Path=/')
+                    self.render('post.html', **params)
 
-        # Queries for post page content
-        params['comments'] = Comment.query(ancestor=ancestor_key()).filter(
-            Comment.post_id == post_id).order(Comment.created)
-        params['likes'] = Like.query(ancestor=ancestor_key()).filter(
-            Like.post_id == post_id).count()
-        self.render('post.html', **params)
+                else:
+                    params['error'] = self.request.cookies.get('error')
+                    self.render('post.html', **params)
 
     # Function to create comments
     def post(self, post_id):
