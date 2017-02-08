@@ -250,7 +250,7 @@ class Login(HandlerHelper):
         if user:
             self.login(user)
             referer = str(self.request.cookies.get('referer'))
-            if referer == None:
+            if referer is None:
                 self.redirect('/feed')
             else:
                 self.redirect(referer)
@@ -312,9 +312,7 @@ class EditPost(HandlerHelper):
     def get(self, post_id):
         post = Post.get_by_id(int(post_id), parent=ancestor_key())
 
-        self.render('edit.html',
-            post=post,
-            referer=self.request.referer)
+        self.render('edit.html', post=post, referer=self.request.referer)
 
     def post(self, post_id):
 
@@ -454,9 +452,11 @@ class EditComment(HandlerHelper):
     def get(self, comment_id):
         comment = Comment.get_by_id(int(comment_id), parent=ancestor_key())
 
-        self.render('editcomment.html',
+        self.render(
+            'editcomment.html',
             comment=comment,
-            referer=self.request.referer)
+            referer=self.request.referer
+            )
 
     def post(self, comment_id):
 
